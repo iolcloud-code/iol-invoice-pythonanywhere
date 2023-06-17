@@ -15,7 +15,7 @@ import dropbox
 from xhtml2pdf import pisa
 import datetime
 from flask_debugtoolbar import DebugToolbarExtension
-import email, ssl, smtplib
+import email, smtplib, ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -343,6 +343,7 @@ def send_html():
     user_hashed=current_user.user_id_hash
     name=user_hashed
     name=name.replace("/","$$$")
+    name=name.replace(".","$$$")
     
     access_token = app.config['DROPBOX_ACCESS_TOKEN']
 
@@ -374,6 +375,7 @@ def send_html():
     
     name=user_hashed
     name=name.replace("/","$$$")
+    name=name.replace(".","$$$")
     
     access_token = app.config['DROPBOX_ACCESS_TOKEN']
 
@@ -390,7 +392,7 @@ def send_html():
     # open the file in bynary
     binary_pdf = open(filename_app, 'rb')
 
-    payload = MIMEBase('application', 'octate-stream', Name=filename_app)
+    payload = MIMEBase('application', 'octet-stream')
     # payload = MIMEBase('application', 'pdf', Name=pdfname)
     payload.set_payload((binary_pdf).read())
 
@@ -398,9 +400,9 @@ def send_html():
     encoders.encode_base64(payload)
 
     # add header with pdf name
-    payload.add_header('Content-Decomposition', 'attachment', filename=filename_app)
+    payload.add_header('Content-Disposition', "attachment; filename= %s" % filename_app)
     message.attach(payload)
-    #text = message.as_string()
+    
 
     #use gmail with port
     """connection = smtplib.SMTP(host='smtp.office365.com', port=587)
@@ -409,12 +411,26 @@ def send_html():
     connection.send_message(message)
     connection.quit()"""
 
-    server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    server.login(email_username, password)
-    server.sendmail(sender_email, receiver_email, message.as_string())
-    server.quit()
-    
-    return render_template('email_sent.html', user=current_user)    
+    # Create a secure SSL context
+    context = ssl.create_default_context()
+
+    #server = smtplib.SMTP('smtp.gmail.com', 587)
+    #server.starttls(context=context)
+    #server.login(email_username, password)
+    text = message.as_string()
+    #server.sendmail(sender_email, receiver_email, text)
+    #server.quit()
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+            server.login(email_username, password)
+            server.sendmail(sender_email, receiver_email, text)
+            server.quit()
+    except Exception as e:
+        print(e.message, e.args)
+    else:    
+        #return render_template('email_sent.html', user=current_user)
+        return 'Done'    
 
 
 
@@ -915,7 +931,8 @@ def invoice():
             query = db.session.query(InvoiceItems).filter_by(user_id=(user_hashed), invoice_number=(request.form['invoice_number'])).paginate(page=page, per_page=POST_PER_PAGE)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #write html and pdf code
             print(app.config['UPLOAD_FOLDER'])
             
@@ -1328,7 +1345,8 @@ def invoice():
             from_template(TEMPLATE_FILE, OUTPUT_FILENAME)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             
             #INPUT_FILENAME = app.config['UPLOAD_FOLDER'] + "/" + name + ".pdf"
             #OUTPUT_TEMPLATE = '/iolcloud/' + name + ".pdf"
@@ -1521,7 +1539,8 @@ def invoiceedit():
             query = db.session.query(InvoiceItems).filter_by(user_id=(user_hashed), invoice_number=(request.form['invoice_number'])).paginate(page=page, per_page=POST_PER_PAGE)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #write html and pdf code
             print(app.config['UPLOAD_FOLDER'])
             
@@ -1934,7 +1953,8 @@ def invoiceedit():
             from_template(TEMPLATE_FILE, OUTPUT_FILENAME)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$") 
             
             #INPUT_FILENAME = app.config['UPLOAD_FOLDER'] + "/" + name + ".pdf"
             #OUTPUT_TEMPLATE = '/iolcloud/' + name + ".pdf"
@@ -2090,7 +2110,8 @@ def invoicenumber():
             query = db.session.query(InvoiceItems).filter_by(user_id=(user_hashed), invoice_number=(request.form['invoice_number'])).paginate(page=page, per_page=POST_PER_PAGE)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$") 
             #write html and pdf code
             print(app.config['UPLOAD_FOLDER'])
             
@@ -2503,8 +2524,8 @@ def invoicenumber():
             from_template(TEMPLATE_FILE, OUTPUT_FILENAME)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
-            
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #INPUT_FILENAME = app.config['UPLOAD_FOLDER'] + "/" + name + ".pdf"
             #OUTPUT_TEMPLATE = '/iolcloud/' + name + ".pdf"
             
@@ -2810,7 +2831,8 @@ def invoicenumberbyein():
             query = db.session.query(InvoiceItems).filter_by(user_id=(user_hashed), invoice_number=(request.form['invoice_number'])).paginate(page=page, per_page=POST_PER_PAGE)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #write html and pdf code
             print(app.config['UPLOAD_FOLDER'])
             
@@ -3223,8 +3245,8 @@ def invoicenumberbyein():
             from_template(TEMPLATE_FILE, OUTPUT_FILENAME)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
-            
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #INPUT_FILENAME = app.config['UPLOAD_FOLDER'] + "/" + name + ".pdf"
             #OUTPUT_TEMPLATE = '/iolcloud/' + name + ".pdf"
             
@@ -3378,7 +3400,8 @@ def invoicenumberresults():
             query = db.session.query(InvoiceItems).filter_by(user_id=(user_hashed), invoice_number=(request.form['invoice_number'])).paginate(page=page, per_page=POST_PER_PAGE)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #write html and pdf code
             print(app.config['UPLOAD_FOLDER'])
             
@@ -3791,8 +3814,8 @@ def invoicenumberresults():
             from_template(TEMPLATE_FILE, OUTPUT_FILENAME)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
-            
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #INPUT_FILENAME = app.config['UPLOAD_FOLDER'] + "/" + name + ".pdf"
             #OUTPUT_TEMPLATE = '/iolcloud/' + name + ".pdf"
             
@@ -3946,7 +3969,8 @@ def invoicenumberbydate():
             query = db.session.query(InvoiceItems).filter_by(user_id=(user_hashed), invoice_number=(request.form['invoice_number'])).paginate(page=page, per_page=POST_PER_PAGE)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #write html and pdf code
             print(app.config['UPLOAD_FOLDER'])
             
@@ -4359,8 +4383,8 @@ def invoicenumberbydate():
             from_template(TEMPLATE_FILE, OUTPUT_FILENAME)
             
             name=user_hashed
-            name=name.replace("/","$$$") 
-            
+            name=name.replace("/","$$$")
+            name=name.replace(".","$$$")
             #INPUT_FILENAME = app.config['UPLOAD_FOLDER'] + "/" + name + ".pdf"
             #OUTPUT_TEMPLATE = '/iolcloud/' + name + ".pdf"
             
